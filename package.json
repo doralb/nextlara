@@ -1,0 +1,56 @@
+{
+  "name": "nextlara",
+  "version": "1.0.2",
+  "description": "A Laravel-inspired framework for Next.js with centralized routing and a powerful CLI.",
+  "author": "Doralb <doralb@gmail.com>",
+  "license": "MIT",
+  "keywords": [
+    "nextjs",
+    "laravel",
+    "framework",
+    "routing",
+    "cli",
+    "bob",
+    "laranext"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/laranext.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/laranext/issues"
+  },
+  "homepage": "https://github.com/your-username/laranext#readme",
+  "main": "dist/index.js",
+  "bin": {
+    "bob": "dist/cli/bob.js",
+    "laranext": "dist/cli/bob.js",
+    "nextlara": "dist/cli/bob.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.2.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^9.2.12",
+    "next": "^16.1.1",
+    "ora": "^5.4.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3"
+  },
+  "files": [
+    "dist",
+    "src/lib"
+  ]
+}
