@@ -4,7 +4,7 @@
 Hi!
 This project commes from the love I had for Laravel and the benefits of using NextJs.
 
-Laranext brings the developer experience of Laravel to the world of Next.js.
+Nextlara brings the developer experience of Laravel to the world of Next.js.
 
 It provides a centralized routing system, a powerful CLI (Bob), and a structured directory layout that makes building modern full-stack apps feel like home.
 
@@ -47,11 +47,11 @@ bob dev
 
 ## 🛣️ Centralized Routing
 
-Stop creating folders just to define a route. With Laranext, your routing is centralized.
+Stop creating folders just to define a route. With Nextlara, your routing is centralized.
 
 ### **Web Routes (`routes/web.ts`)**
 ```typescript
-import { router, view } from '@/lib/laranext/Router';
+import { router, view } from '@/lib/nextlara/Router';
 import Welcome from '@/resources/views/welcome';
 import About from '@/resources/views/about';
 
@@ -61,11 +61,11 @@ router.get('/about', () => view(About));
 
 ### **API Routes (`routes/api.ts`)**
 ```typescript
-import { apiRouter as router } from '@/lib/laranext/Router';
+import { apiRouter as router } from '@/lib/nextlara/Router';
 
 // Automatically becomes /api/hello
 router.get('/hello', async (request) => {
-    return NextResponse.json({ message: 'Hello from Laranext!' });
+    return NextResponse.json({ message: 'Hello from Nextlara!' });
 });
 
 // Parameter binding
@@ -112,7 +112,7 @@ bob dev                                         # Start dev server
 
 ## 📄 License
 
-The Laranext framework is open-sourced software licensed under the [MIT license](LICENSE).
+The Nextlara framework is open-sourced software licensed under the [MIT license](LICENSE).
 
 ---
 
