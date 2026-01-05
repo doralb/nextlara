@@ -1,7 +1,9 @@
+// @ts-ignore
 import { PrismaClient } from '@prisma/client';
 
 export class Model {
-    protected static prisma = new PrismaClient();
+    // @ts-ignore
+    protected static prisma = typeof PrismaClient !== 'undefined' ? new PrismaClient() : null;
 
     static async all() {
         return [];
