@@ -16,9 +16,9 @@ It provides a centralized routing system, a powerful CLI (Bob), and a structured
 ## ✨ Features
 
 *   **Centralized Routing**: Define all your web and API routes in one place (`routes/web.ts` and `routes/api.ts`).
-*   ** Bob CLI**: A powerful Laravel-style command line tool to generate controllers, models, migrations, and more.
+*   **Bob CLI**: A powerful Laravel-style command line tool to generate controllers, models, migrations, and more.
 *   **Structured Excellence**: A familiar directory structure with `resources/views`, `app/controllers`, and `app/models`.
-*   ** Smart API Router**: Automatic `/api` prefixing and parameter binding.
+*   **Smart API Router**: Automatic `/api` prefixing and parameter binding.
 *   **Master Layouts**: Centralized layouts in `resources/views/layouts`.
 *   **Native Next.js Power**: Built on top of the App Router, offering full SSR, ISR, and Server Component support.
 
