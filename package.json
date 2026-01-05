@@ -1,6 +1,6 @@
 {
   "name": "nextlara",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A Laravel-inspired framework for Next.js with centralized routing and a powerful CLI.",
   "author": "Doralb <doralb@gmail.com>",
   "license": "MIT",
@@ -11,7 +11,13 @@
     "routing",
     "cli",
     "bob",
-    "laranext"
+    "nextlara"
+  ],
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",
@@ -48,9 +54,5 @@
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.10.5",
     "typescript": "^5.3.3"
-  },
-  "files": [
-    "dist",
-    "src/lib"
-  ]
+  }
 }

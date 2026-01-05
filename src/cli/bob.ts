@@ -28,7 +28,7 @@ console.log(chalk.cyan.bold(`
 program
     .name('bob')
     .description('Bob builds things - A Laravel-inspired CLI for Next.js')
-    .version('1.0.3');
+    .version('1.0.5');
 
 // Initialize command
 program
