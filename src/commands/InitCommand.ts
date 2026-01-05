@@ -5,7 +5,25 @@ import path from 'path';
 import inquirer from 'inquirer';
 
 export class InitCommand {
+  private starter: string = 'basic';
+
   async handle() {
+    // Stop spinner to show prompt
+    const answers = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'starter',
+        message: 'Which starter kit would you like to use?',
+        choices: [
+          { name: 'Basic (Routing + CLI)', value: 'basic' },
+          { name: 'SaaS Starter Kit (Auth + Dashboard + Prisma)', value: 'auth' }
+        ],
+        default: 'basic'
+      }
+    ]);
+
+    this.starter = answers.starter;
+
     const spinner = ora('Initializing Nextlara project...').start();
 
     try {
@@ -41,6 +59,11 @@ export class InitCommand {
 
       // Create route files
       await this.createRouteFiles(cwd);
+
+      // Create Auth scaffolding if needed
+      if (this.starter === 'auth') {
+        await this.createAuthScaffolding(cwd);
+      }
 
       // Create Next.js configuration
       await this.createNextJsConfig(cwd);
@@ -230,7 +253,7 @@ export class Middleware {
   }
 
   private async initializePrisma(cwd: string) {
-    const prismaSchema = `// This is your Prisma schema file,
+    let prismaSchema = `// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -242,6 +265,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Nextlara Starter Models
+`;
+
+    if (this.starter === 'auth') {
+      prismaSchema += `
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+}
+`;
+    } else {
+      prismaSchema += `
 // Example model
 // model User {
 //   id        Int      @id @default(autoincrement())
@@ -251,49 +297,37 @@ datasource db {
 //   updatedAt DateTime @updatedAt
 // }
 `;
+    }
+
     await fs.ensureDir(path.join(cwd, 'prisma'));
     await fs.writeFile(path.join(cwd, 'prisma/schema.prisma'), prismaSchema);
   }
 
   private async createRouteFiles(cwd: string) {
     // Create routes/api.ts
-    const apiRoutes = `import { apiRouter as router } from '@/lib/nextlara/Router';
+    let apiRoutes = `import { apiRouter as router } from '@/lib/nextlara/Router';
 import { NextResponse } from 'next/server';
 
 /**
  * API Routes
- * 
- * Define your API routes here using Laravel-style routing
  */
+`;
 
+    if (this.starter === 'auth') {
+      apiRoutes += `
+import { AuthController } from '@/app/controllers/AuthController';
+const authController = new AuthController();
+
+router.post('/login', (req) => authController.login(req));
+router.post('/register', (req) => authController.register(req));
+router.post('/logout', (req) => authController.logout());
+`;
+    }
+
+    apiRoutes += `
 // Example routes (uncomment to use):
-// import { PostController } from '@/app/controllers/PostController';
-// const postController = new PostController();
-
-// Simple routes
-// router.get('/api/hello', async (request) => {
+// router.get('/hello', async (request) => {
 //   return NextResponse.json({ message: 'Hello from Nextlara!' });
-// });
-
-// Resource routes
-// router.resource('/api/posts', postController);
-
-// Grouped routes with prefix
-// router.prefix('/api/v1', (router) => {
-//   router.resource('/posts', postController);
-//   router.resource('/users', userController);
-// });
-
-// Grouped routes with middleware
-// import { authMiddleware } from '@/app/middleware/AuthMiddleware';
-// router.middleware(authMiddleware, (router) => {
-//   router.resource('/api/posts', postController);
-// });
-
-// Combined prefix and middleware
-// router.group({ prefix: '/api/admin', middleware: [authMiddleware] }, (router) => {
-//   router.resource('/posts', postController);
-//   router.resource('/users', userController);
 // });
 
 export { router };
@@ -301,7 +335,7 @@ export { router };
     await fs.writeFile(path.join(cwd, 'routes/api.ts'), apiRoutes);
 
     // Create routes/web.ts
-    const webRoutes = `import { router, view } from '@/lib/nextlara/Router';
+    let webRoutes = `import { router, view } from '@/lib/nextlara/Router';
 import Welcome from '@/resources/views/welcome';
 
 /**
@@ -311,7 +345,26 @@ import Welcome from '@/resources/views/welcome';
  */
 
 router.get('/', () => view(Welcome));
+`;
 
+    if (this.starter === 'auth') {
+      webRoutes += `
+import Login from '@/resources/views/auth/login';
+import Register from '@/resources/views/auth/register';
+import Dashboard from '@/resources/views/dashboard';
+import { auth } from '@/app/middleware/AuthMiddleware';
+
+router.get('/login', () => view(Login));
+router.get('/register', () => view(Register));
+
+// Protected routes
+router.middleware(auth, (router) => {
+  router.get('/dashboard', () => view(Dashboard));
+});
+`;
+    }
+
+    webRoutes += `
 export { router };
 `;
     await fs.writeFile(path.join(cwd, 'routes/web.ts'), webRoutes);
@@ -353,6 +406,20 @@ export async function DELETE(request: Request) {
 
   private async createNextJsConfig(cwd: string) {
     // Create package.json
+    const dependencies: any = {
+      next: "canary",
+      react: "^19.0.0",
+      "react-dom": "^19.0.0",
+      "@prisma/client": "latest"
+    };
+
+    if (this.starter === 'auth') {
+      dependencies["lucide-react"] = "latest";
+      dependencies["framer-motion"] = "latest";
+      dependencies["clsx"] = "latest";
+      dependencies["tailwind-merge"] = "latest";
+    }
+
     const packageJson = {
       name: path.basename(cwd),
       version: "1.0.0",
@@ -362,12 +429,7 @@ export async function DELETE(request: Request) {
         start: "next start",
         lint: "next lint"
       },
-      dependencies: {
-        next: "canary",
-        react: "^19.0.0",
-        "react-dom": "^19.0.0",
-        "@prisma/client": "latest"
-      },
+      dependencies,
       devDependencies: {
         "@types/node": "^20.0.0",
         "@types/react": "^19.0.0",
@@ -430,23 +492,140 @@ module.exports = nextConfig
     await fs.ensureDir(path.join(cwd, 'resources/views/layouts'));
 
     // Create resources/views/welcome.tsx
-    const welcomeView = `export default function Welcome() {
-  return (
-    <div style={{ padding: '2rem', fontFamily: 'system-ui' }}>
-      <h1>🚀 Nextlara - Laravel for Next.js</h1>
-      <p>Your app is ready! This view is located in <code>resources/views/welcome.tsx</code></p>
-      
-      <h2>Quick Start:</h2>
-      <ol>
-        <li>Define routes in <code>routes/web.ts</code> or <code>routes/api.ts</code></li>
-        <li>Create views in <code>resources/views</code></li>
-        <li>Create controllers with <code>bob make:controller</code></li>
-      </ol>
+    const welcomeView = `import React from 'react';
 
-      <h2>Example Routes:</h2>
-      <ul>
-        <li><a href="/api/hello">/api/hello</a></li>
-      </ul>
+export default function Welcome() {
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#0f172a', 
+      color: '#f8fafc', 
+      fontFamily: 'Inter, system-ui, sans-serif',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem',
+      textAlign: 'center'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, #38bdf8, transparent)',
+      }} />
+      
+      <div style={{
+        maxWidth: '800px',
+      }}>
+        <div style={{
+          display: 'inline-block',
+          padding: '2px',
+          background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+          borderRadius: '12px',
+          marginBottom: '2rem',
+          boxShadow: '0 0 20px rgba(56, 189, 248, 0.2)'
+        }}>
+          <div style={{
+            backgroundColor: '#0f172a',
+            borderRadius: '10px',
+            padding: '1rem 2rem',
+            fontSize: '1.25rem',
+            fontWeight: 'bold',
+          }}>
+            Nextlara 1.0.6
+          </div>
+        </div>
+
+        <h1 style={{ 
+          fontSize: '4rem', 
+          fontWeight: '800', 
+          marginBottom: '1rem',
+          letterSpacing: '-0.025em',
+          background: 'linear-gradient(to bottom right, #ffffff 40%, #94a3b8)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
+        }}>
+          Laravel Elegance.<br />
+          Next.js Power.
+        </h1>
+        
+        <p style={{ 
+          fontSize: '1.25rem', 
+          color: '#94a3b8', 
+          marginBottom: '3rem',
+          lineHeight: '1.6'
+        }}>
+          Experience the world's most productive full-stack framework for Next.js. 
+          Centralized routing, powerful CLI, and a structure that feels like home.
+        </p>
+
+        <div style={{ 
+          display: 'flex', 
+          gap: '1rem', 
+          justifyContent: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <a href="https://github.com/doralb/nextlara" style={{
+            backgroundColor: '#f8fafc',
+            color: '#0f172a',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            fontWeight: '600',
+            textDecoration: 'none',
+            transition: 'all 0.2s',
+          }}>
+            Documentation
+          </a>
+          ${this.starter === 'auth' ? `
+          <a href="/dashboard" style={{
+            backgroundColor: '#38bdf8',
+            color: '#0f172a',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            fontWeight: '600',
+            textDecoration: 'none',
+            transition: 'all 0.2s',
+          }}>
+            Go to Dashboard
+          </a>
+          ` : `
+          <div style={{
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            fontFamily: 'monospace',
+            color: '#38bdf8'
+          }}>
+            bob make:controller
+          </div>
+          `}
+        </div>
+
+        <div style={{ 
+          marginTop: '5rem',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '2rem',
+          textAlign: 'left'
+        }}>
+          <div style={{ padding: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+            <h3 style={{ marginBottom: '0.5rem', color: '#38bdf8' }}>Routes</h3>
+            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Centralized in routes/web.ts. No more messy folders.</p>
+          </div>
+          <div style={{ padding: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+            <h3 style={{ marginBottom: '0.5rem', color: '#38bdf8' }}>CLI</h3>
+            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Bob builds everything. Models, migrations, controllers.</p>
+          </div>
+          <div style={{ padding: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+            <h3 style={{ marginBottom: '0.5rem', color: '#38bdf8' }}>Views</h3>
+            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Clean separation. Your React components in resources/views.</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -551,5 +730,131 @@ yarn-error.log*
 next-env.d.ts
 `;
     await fs.writeFile(path.join(cwd, '.gitignore'), gitignore);
+  }
+
+  private async createAuthScaffolding(cwd: string) {
+    // Create AuthController
+    const authController = `import { NextRequest, NextResponse } from 'next/server';
+import { Controller } from '@/lib/nextlara/Controller';
+
+export class AuthController extends Controller {
+  async register(request: NextRequest): Promise<NextResponse> {
+    try {
+      // In a real app, you would validate and save to DB
+      // const user = await User.create(request.body);
+      return this.success({ message: 'User registered successfully' });
+    } catch (error: any) {
+      return this.error(error.message);
+    }
+  }
+
+  async login(request: NextRequest): Promise<NextResponse> {
+    try {
+      return this.success({ token: 'mock-jwt-token' });
+    } catch (error: any) {
+      return this.error('Invalid credentials', 401);
+    }
+  }
+
+  async logout(): Promise<NextResponse> {
+    return this.success({ message: 'Logged out successfully' });
+  }
+}
+`;
+    await fs.writeFile(path.join(cwd, 'app/controllers/AuthController.ts'), authController);
+
+    // Create AuthMiddleware
+    const authMiddleware = `import { NextRequest, NextResponse } from 'next/server';
+import { Middleware } from '@/lib/nextlara/Middleware';
+
+export class AuthMiddleware extends Middleware {
+  async handle(request: NextRequest, next: () => Promise<NextResponse>): Promise<NextResponse> {
+    // Example: Check for Auth header or session cookie
+    const token = request.headers.get('authorization');
+    
+    if (!token) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    
+    return next();
+  }
+}
+
+export const auth = new AuthMiddleware();
+`;
+    await fs.writeFile(path.join(cwd, 'app/middleware/AuthMiddleware.ts'), authMiddleware);
+
+    // Create Auth Views
+    await fs.ensureDir(path.join(cwd, 'resources/views/auth'));
+
+    const loginView = `import React from 'react';
+
+export default function Login() {
+  return (
+    <div style={{ backgroundColor: '#0f172a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ backgroundColor: '#1e293b', padding: '2rem', borderRadius: '12px', width: '100%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <h2 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>Nextlara Login</h2>
+        <input type="email" placeholder="Email" style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', borderRadius: '6px', border: 'none', backgroundColor: '#0f172a', color: 'white' }} />
+        <input type="password" placeholder="Password" style={{ width: '100%', padding: '0.75rem', marginBottom: '1.5rem', borderRadius: '6px', border: 'none', backgroundColor: '#0f172a', color: 'white' }} />
+        <button style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: 'none', backgroundColor: '#38bdf8', color: '#0f172a', fontWeight: 'bold' }}>Sign In</button>
+        <p style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: '#94a3b8' }}>Don't have an account? <a href="/register" style={{ color: '#38bdf8' }}>Register</a></p>
+      </div>
+    </div>
+  );
+}
+`;
+    await fs.writeFile(path.join(cwd, 'resources/views/auth/login.tsx'), loginView);
+
+    const registerView = `import React from 'react';
+
+export default function Register() {
+  return (
+    <div style={{ backgroundColor: '#0f172a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ backgroundColor: '#1e293b', padding: '2rem', borderRadius: '12px', width: '100%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <h2 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>Create Account</h2>
+        <input type="text" placeholder="Full Name" style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', borderRadius: '6px', border: 'none', backgroundColor: '#0f172a', color: 'white' }} />
+        <input type="email" placeholder="Email" style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', borderRadius: '6px', border: 'none', backgroundColor: '#0f172a', color: 'white' }} />
+        <input type="password" placeholder="Password" style={{ width: '100%', padding: '0.75rem', marginBottom: '1.5rem', borderRadius: '6px', border: 'none', backgroundColor: '#0f172a', color: 'white' }} />
+        <button style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: 'none', backgroundColor: '#38bdf8', color: '#0f172a', fontWeight: 'bold' }}>Register</button>
+        <p style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: '#94a3b8' }}>Already have an account? <a href="/login" style={{ color: '#38bdf8' }}>Login</a></p>
+      </div>
+    </div>
+  );
+}
+`;
+    await fs.writeFile(path.join(cwd, 'resources/views/auth/register.tsx'), registerView);
+
+    const dashboardView = `import React from 'react';
+
+export default function Dashboard() {
+  return (
+    <div style={{ backgroundColor: '#0f172a', color: 'white', minHeight: '100vh', display: 'flex' }}>
+      <div style={{ width: '260px', borderRight: '1px solid rgba(255,255,255,0.1)', padding: '2rem' }}>
+        <h2 style={{ color: '#38bdf8', marginBottom: '2rem' }}>Nextlara</h2>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <a href="/dashboard" style={{ color: '#38bdf8', textDecoration: 'none' }}>Dashboard</a>
+          <a href="/profile" style={{ color: '#94a3b8', textDecoration: 'none' }}>Profile</a>
+          <a href="/settings" style={{ color: '#94a3b8', textDecoration: 'none' }}>Settings</a>
+          <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <a href="/" style={{ color: '#ef4444', textDecoration: 'none' }}>Logout</a>
+          </div>
+        </nav>
+      </div>
+      <div style={{ flex: 1, padding: '3rem' }}>
+        <h1 style={{ marginBottom: '2rem' }}>Welcome to your Dashboard</h1>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+          {[1,2,3].map(i => (
+            <div key={i} style={{ backgroundColor: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <h4 style={{ color: '#94a3b8', marginBottom: '0.5rem' }}>Stat {i}</h4>
+              <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>$4,500</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+`;
+    await fs.writeFile(path.join(cwd, 'resources/views/dashboard.tsx'), dashboardView);
   }
 }

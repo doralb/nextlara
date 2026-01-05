@@ -35,6 +35,7 @@ npm install -g nextlara
 ```bash
 nextlara new my-awesome-app
 ```
+*Choose between **Basic** or **SaaS Starter Kit (Auth + Dashboard)** when prompted!*
 
 ### 3. Start Developing
 ```bash
