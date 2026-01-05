@@ -1,6 +1,6 @@
 {
   "name": "nextlara",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A Laravel-inspired framework for Next.js with centralized routing and a powerful CLI.",
   "author": "Doralb <doralb@gmail.com>",
   "license": "MIT",

@@ -497,12 +497,13 @@ import { notFound } from 'next/navigation';
  * This file handles ALL web requests and resolves them using routes/web.ts.
  * You never have to create another page.tsx file again!
  */
-export default async function CatchAllWebPage({ params }: { params: { slug?: string[] } }) {
-  const path = params.slug ? '/' + params.slug.join('/') : '/';
+export default async function CatchAllWebPage({ params }: { params: Promise<{ slug?: string[] }> }) {
+  const { slug } = await params;
+  const path = slug ? '/' + slug.join('/') : '/';
   const route = router.findRoute(path, 'GET');
 
   if (route && typeof route.handler === 'function') {
-    const Component = await route.handler();
+    const Component = (await route.handler()) as any;
     const routeParams = router.extractParams(route.path, path);
     return <Component params={routeParams} />;
   }

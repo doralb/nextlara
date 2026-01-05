@@ -5,7 +5,7 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'
 export interface RouteHandler {
     method: HttpMethod;
     path: string;
-    handler: (request?: NextRequest, params?: any) => Promise<NextResponse>;
+    handler: (request: NextRequest, params?: any) => Promise<NextResponse>;
     middleware?: any[];
 }
 
