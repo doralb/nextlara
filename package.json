@@ -30,7 +30,6 @@
   "main": "dist/index.js",
   "bin": {
     "bob": "dist/cli/bob.js",
-    "laranext": "dist/cli/bob.js",
     "nextlara": "dist/cli/bob.js"
   },
   "scripts": {

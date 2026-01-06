@@ -23,7 +23,7 @@ export class NewCommand {
             // Change to project directory and initialize
             process.chdir(targetDir);
 
-            spinner.text = 'Initializing Nextlara project...';
+            spinner.stop();
             const initCommand = new InitCommand();
             await initCommand.handle();
 

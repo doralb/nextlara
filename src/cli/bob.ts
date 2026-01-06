@@ -13,6 +13,7 @@ import { MakeMiddlewareCommand } from '../commands/MakeMiddlewareCommand';
 import { NewCommand } from '../commands/NewCommand';
 import { DevCommand } from '../commands/DevCommand';
 import { StartCommand } from '../commands/StartCommand';
+import { UpdateCommand } from '../commands/UpdateCommand';
 
 const program = new Command();
 
@@ -115,6 +116,14 @@ program
     .option('--fresh', 'Drop all tables and re-run all migrations')
     .action(async (options) => {
         await new MigrateCommand().handle(options);
+    });
+
+// Update command
+program
+    .command('update')
+    .description('Update the global Nextlara CLI to the latest version')
+    .action(async () => {
+        await new UpdateCommand().handle();
     });
 
 program.parse(process.argv);
